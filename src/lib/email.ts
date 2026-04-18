@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 const FROM = "Pura Vida Growth <billing@puravidagrowth.com>";
 
 const SINPE_DEFAULT = "8888-8888";
@@ -54,7 +58,7 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
       </div>
     </div>`;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: [data.clientEmail],
     subject: `Invoice ${data.invoiceRef} — ${data.totalAmount}`,
@@ -98,7 +102,7 @@ export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: 
       </div>
     </div>`;
 
-  return resend.emails.send({ from: FROM, to: [data.clientEmail], subject, html });
+  return getResend().emails.send({ from: FROM, to: [data.clientEmail], subject, html });
 }
 
 export async function sendPaymentConfirmedEmail(data: InvoiceEmailData & { isPartial?: boolean; balanceRemaining?: string }) {
@@ -125,7 +129,7 @@ export async function sendPaymentConfirmedEmail(data: InvoiceEmailData & { isPar
       </div>
     </div>`;
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM,
     to: [data.clientEmail],
     subject: `Payment ${data.isPartial ? "received" : "confirmed"} — Invoice ${data.invoiceRef}`,
