@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, FileText, Bot, LogOut, Users, Receipt, Activity,
   Settings, Mail, FolderDown, Brain, Briefcase, Landmark, CalendarClock,
-  UserCheck, Eye, EyeOff, BookOpen, CreditCard,
+  UserCheck, Eye, EyeOff, BookOpen, CreditCard, Sparkles,
 } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy";
 import { AxisIcon } from "@/components/axis-logo";
@@ -21,6 +21,7 @@ const links = [
   { href: "/dashboard/vendors",       label: "Vendors",        icon: Briefcase },
   { href: "/dashboard/bank",          label: "Bank",           icon: Landmark },
   { href: "/dashboard/drive",      label: "Drive Import",   icon: FolderDown },
+  { href: "/dashboard/agent",      label: "AXIS Agent",     icon: Sparkles },
   { href: "/dashboard/monitor",    label: "AI Monitor",     icon: Bot },
   { href: "/dashboard/activity",   label: "Activity",       icon: Activity },
   { href: "/dashboard/templates",  label: "Email Templates", icon: Mail },
