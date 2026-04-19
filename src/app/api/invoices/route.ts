@@ -17,7 +17,32 @@ export async function GET(req: NextRequest) {
     const paid = parseFloat(inv.paid_amount ?? "0");
     const overdue = daysOverdue(inv.due_date);
     const billing = computeBillingStatus(inv.billing_status ?? "DRAFT", inv.status ?? "pending", inv.due_date, paid, total);
-    return { ...inv, totalAmount: total, paidAmount: paid, balanceRemaining: Math.max(0, total - paid), daysOverdue: overdue, billingStatus: billing };
+    return {
+      ...inv,
+      // camelCase aliases (UI expects these)
+      invoiceRef: inv.invoice_ref,
+      clientName: inv.client_name,
+      clientEmail: inv.client_email,
+      clientCompany: inv.client_company,
+      clientLlcName: inv.client_llc_name,
+      clientCommercialName: inv.client_commercial_name,
+      projectName: inv.project_name,
+      dueDate: inv.due_date,
+      invoiceDate: inv.invoice_date,
+      sentAt: inv.sent_at,
+      followUpCount: inv.follow_up_count ?? 0,
+      lastFollowUpAt: inv.last_follow_up_at,
+      sinpeNumber: inv.sinpe_number,
+      invoiceType: inv.invoice_type,
+      lineItems: inv.line_items,
+      preferredLanguage: inv.preferred_language,
+      // computed
+      totalAmount: total,
+      paidAmount: paid,
+      balanceRemaining: Math.max(0, total - paid),
+      daysOverdue: overdue,
+      billingStatus: billing,
+    };
   });
 
   if (statusFilter) return NextResponse.json(enriched.filter((i: any) => i.billingStatus === statusFilter));
@@ -42,8 +67,10 @@ export async function POST(req: NextRequest) {
     currency: body.currency || "USD",
     invoice_type: body.invoiceType || "standard",
     due_date: body.dueDate,
+    invoice_date: new Date().toISOString().split("T")[0],
     sinpe_number: body.sinpeNumber,
     notes: body.notes,
+    line_items: body.lineItems ?? [],
     billing_status: "DRAFT",
     status: "pending",
   }).select().single();

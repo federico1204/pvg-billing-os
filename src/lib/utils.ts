@@ -77,7 +77,7 @@ export function daysOverdue(dueDate: string | Date): number {
 }
 
 export function fmt(amount: number, currency = "USD"): string {
-  if (currency === "CRC") return `₡${amount.toLocaleString("es-CR")}`;
+  if (currency === "CRC") return `₡${Math.round(amount).toLocaleString("en-US")}`;
   return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount);
 }
 

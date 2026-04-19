@@ -16,6 +16,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!inv) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (!inv.client_email) return NextResponse.json({ error: "No client email" }, { status: 400 });
 
+  // Look up client's preferred language
+  let lang = inv.preferred_language ?? "en";
+  if (inv.client_email) {
+    const { data: client } = await db.from("clients").select("preferred_language").eq("email", inv.client_email).single();
+    if (client) lang = (client as any).preferred_language ?? lang;
+  }
+
   const total = parseFloat(inv.total_amount);
   const paid = parseFloat(inv.paid_amount ?? "0");
   const balance = Math.max(0, total - paid);
@@ -27,16 +34,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     totalAmount: fmt(balance, inv.currency ?? "USD"),
     dueDate: inv.due_date, currency: inv.currency ?? "USD",
     sinpeNumber: inv.sinpe_number,
+    lang,
   };
 
   if (type === "invoice") {
     await sendInvoiceEmail(emailData);
     await db.from("invoices").update({ sent_at: new Date().toISOString(), billing_status: "SENT", updated_at: new Date().toISOString() }).eq("id", invoiceId);
     await db.from("billing_activity").insert({
-      invoice_id: invoiceId, action_type: "INVOICE_SENT",
-      description: `Invoice sent to ${inv.client_email}`,
-      performed_by: "admin", email_sent: true,
-      email_subject: `Invoice ${inv.invoice_ref} — ${fmt(total, inv.currency ?? "USD")}`,
+      invoice_id: invoiceId, action: "sent",
+      description: `Invoice sent to ${inv.client_email} (${lang === "es" ? "Spanish" : "English"})`,
+      performed_by: "admin",
     });
   } else {
     await sendFollowUpEmail({ ...emailData, daysOverdue: overdue, followUpCount: (inv.follow_up_count ?? 0) + 1 });
@@ -46,10 +53,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       updated_at: new Date().toISOString(),
     }).eq("id", invoiceId);
     await db.from("billing_activity").insert({
-      invoice_id: invoiceId, action_type: "FOLLOW_UP_SENT",
-      description: `Follow-up sent to ${inv.client_email} (${overdue}d overdue)`,
-      performed_by: "admin", email_sent: true,
-      email_subject: overdue >= 14 ? `[URGENT] Invoice ${inv.invoice_ref}` : `Reminder: Invoice ${inv.invoice_ref}`,
+      invoice_id: invoiceId, action: "follow_up_sent",
+      description: `Follow-up sent to ${inv.client_email}${overdue > 0 ? ` (${overdue}d overdue)` : ""} (${lang === "es" ? "Spanish" : "English"})`,
+      performed_by: "admin",
     });
   }
 

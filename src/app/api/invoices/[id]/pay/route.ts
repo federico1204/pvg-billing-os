@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await db.from("billing_activity").insert({
     invoice_id: invoiceId,
     action_type: "PAYMENT_RECORDED",
-    description: `Payment of ${fmt(parseFloat(body.amount), inv.currency ?? "USD")} via ${body.method || "bank_transfer"}`,
+    description: `Payment of ${fmt(parseFloat(body.amount), inv.currency ?? "USD")} via ${body.method || "bank_transfer"}${body.reference ? ` · Ref: ${body.reference}` : ""}`,
     performed_by: "admin",
     email_sent: false,
   });

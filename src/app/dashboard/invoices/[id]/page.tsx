@@ -14,7 +14,7 @@ interface InvoiceDetail {
   projectName: string | null; totalAmount: number; paidAmount: number; balanceRemaining: number;
   currency: string; dueDate: string; billingStatus: string; daysOverdue: number;
   sentAt: string | null; followUpCount: number; notes: string | null; sinpeNumber: string | null;
-  payments: any[]; activities: any[];
+  lineItems: any[]; payments: any[]; activities: any[];
 }
 
 const MANUAL_STATUSES: BillingStatus[] = ["DRAFT","SENT","CLIENT_REPLIED","PROOF_RECEIVED","WAITING_BANK","DISPUTED","CANCELLED"];
@@ -130,6 +130,38 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           {inv.daysOverdue > 0 && <p className="text-xs text-red-400 mt-1">{inv.daysOverdue} days overdue</p>}
         </Card>
       </div>
+
+      {inv.lineItems && inv.lineItems.length > 0 && (
+        <Card className="mb-6">
+          <h2 className="text-sm font-medium text-white mb-4">Line Items</h2>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-800">
+                <th className="text-left pb-2 text-zinc-400 font-medium">Category</th>
+                <th className="text-left pb-2 text-zinc-400 font-medium">Description</th>
+                <th className="text-right pb-2 text-zinc-400 font-medium">Qty</th>
+                <th className="text-right pb-2 text-zinc-400 font-medium">Rate</th>
+                <th className="text-right pb-2 text-zinc-400 font-medium">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inv.lineItems.map((line: any, i: number) => (
+                <tr key={i} className="border-b border-zinc-800/50">
+                  <td className="py-2 text-xs text-zinc-400">{line.category || "—"}</td>
+                  <td className="py-2 text-zinc-300">{line.description || "—"}</td>
+                  <td className="py-2 text-right text-zinc-400">{line.quantity}</td>
+                  <td className="py-2 text-right text-zinc-400">{fmt(line.rate, inv.currency)}</td>
+                  <td className="py-2 text-right text-zinc-300 font-medium">{fmt(line.amount, inv.currency)}</td>
+                </tr>
+              ))}
+              <tr>
+                <td colSpan={4} className="pt-3 text-right text-sm font-medium text-zinc-400">Total</td>
+                <td className="pt-3 text-right text-sm font-bold text-white">{fmt(inv.totalAmount, inv.currency)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-6 mb-6">
         <Card>
