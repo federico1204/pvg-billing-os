@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
         dueDate: inv.due_date,
         daysOverdue: overdue,
         followUpCount: (inv.follow_up_count ?? 0) + 1,
-        sinpeNumber: inv.sinpe_number,
       });
 
       await db.from("invoices").update({
