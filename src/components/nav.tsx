@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, FileText, Bot, LogOut, Users, Receipt, Activity,
   Settings, Mail, FolderDown, Brain, Briefcase, Landmark, CalendarClock,
-  UserCheck, Eye, EyeOff, BookOpen,
+  UserCheck, Eye, EyeOff, BookOpen, CreditCard,
 } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy";
 import { AxisIcon } from "@/components/axis-logo";
@@ -16,9 +16,10 @@ const links = [
   { href: "/dashboard/recurring",  label: "Recurring",      icon: CalendarClock },
   { href: "/dashboard/clients",    label: "Clients",        icon: Users },
   { href: "/dashboard/team",       label: "Team",           icon: UserCheck },
-  { href: "/dashboard/expenses",   label: "Expenses",       icon: Receipt },
-  { href: "/dashboard/vendors",    label: "Vendors",        icon: Briefcase },
-  { href: "/dashboard/bank",       label: "Bank",           icon: Landmark },
+  { href: "/dashboard/expenses",      label: "Expenses",       icon: Receipt },
+  { href: "/dashboard/credit-cards", label: "Credit Cards",   icon: CreditCard },
+  { href: "/dashboard/vendors",       label: "Vendors",        icon: Briefcase },
+  { href: "/dashboard/bank",          label: "Bank",           icon: Landmark },
   { href: "/dashboard/drive",      label: "Drive Import",   icon: FolderDown },
   { href: "/dashboard/monitor",    label: "AI Monitor",     icon: Bot },
   { href: "/dashboard/activity",   label: "Activity",       icon: Activity },
