@@ -98,7 +98,7 @@ async function send(to: string, subject: string, html: string) {
   return getResend().emails.send({
     from: FROM,
     to: [to],
-    reply_to: REPLY_TO,
+    replyTo: REPLY_TO,
     bcc: [BCC],
     subject,
     html,

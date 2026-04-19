@@ -85,7 +85,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await getResend().emails.send({
       from: FROM,
       to: [recipient],
-      reply_to: REPLY_TO,
+      replyTo: REPLY_TO,
       bcc: [BCC],
       subject,
       html,
