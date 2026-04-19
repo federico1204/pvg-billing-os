@@ -105,6 +105,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [emailDraftError, setEmailDraftError] = useState<string | null>(null);
   const [copiedSubject, setCopiedSubject] = useState(false);
   const [copiedBody, setCopiedBody] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailSendError, setEmailSendError] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch(`/api/clients/${id}`);
@@ -259,6 +262,37 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     setEmailDraftLoading(false);
   }
 
+  async function sendEmail() {
+    if (!emailDraft) return;
+    setEmailSending(true);
+    setEmailSendError(null);
+    try {
+      const res = await fetch(`/api/clients/${id}/send-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          subject: emailDraft.subject,
+          emailBody: emailDraft.body,
+          lang: emailDraft.lang || "en",
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setEmailSendError(err.error || "Failed to send");
+      } else {
+        setEmailSent(true);
+        setTimeout(() => {
+          setShowEmailModal(false);
+          setEmailSent(false);
+          setEmailDraft(null);
+        }, 2000);
+      }
+    } catch {
+      setEmailSendError("Network error");
+    }
+    setEmailSending(false);
+  }
+
   function copyToClipboard(text: string, type: "subject" | "body") {
     navigator.clipboard.writeText(text);
     if (type === "subject") {
@@ -329,7 +363,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               <ClipboardList size={14} />Statement
             </Button>
           </Link>
-          <Button size="sm" variant="outline" onClick={() => { setShowEmailModal(true); setEmailDraft(null); setEmailDraftError(null); }}>
+          <Button size="sm" variant="outline" onClick={() => { setShowEmailModal(true); setEmailDraft(null); setEmailDraftError(null); setEmailSent(false); setEmailSendError(null); }}>
             <Mail size={14} />Draft Email
           </Button>
           {editing ? (
@@ -871,8 +905,24 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     />
                   </div>
 
-                  <p className="text-xs text-zinc-500">
-                    Open in Gmail or paste into <span className="text-zinc-400 font-mono">billing@puravidagrowth.com</span>
+                  {emailSendError && (
+                    <p className="text-sm text-red-400">{emailSendError}</p>
+                  )}
+                  <Button
+                    onClick={sendEmail}
+                    disabled={emailSending || emailSent}
+                    className={`w-full ${emailSent ? "bg-green-600 hover:bg-green-600" : ""}`}
+                  >
+                    {emailSent ? (
+                      <><Check size={14} /> Sent!</>
+                    ) : emailSending ? (
+                      "Sending…"
+                    ) : (
+                      <><Mail size={14} /> Send Email</>
+                    )}
+                  </Button>
+                  <p className="text-xs text-zinc-600 text-center">
+                    Sends from <span className="text-zinc-500">billing@puravidagrowth.com</span> via AXIS
                   </p>
                 </div>
               )}
