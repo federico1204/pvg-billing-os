@@ -8,8 +8,6 @@ function getResend() {
 const FROM = "Pura Vida Growth <billing@puravidagrowth.com>";
 const BCC = "billing@puravidagrowth.com";
 
-const SINPE_DEFAULT = "8888-8888";
-
 interface InvoiceEmailData {
   clientName: string;
   clientEmail: string;
@@ -18,52 +16,29 @@ interface InvoiceEmailData {
   totalAmount: string;
   dueDate: string;
   currency: string;
-  sinpeNumber?: string | null;
   notes?: string | null;
   lang?: string; // "en" | "es"
 }
 
-function paymentInstructionsHtml(currency: string, sinpe: string | null | undefined, invoiceRef: string, lang: string): string {
+function paymentInstructionsHtml(invoiceRef: string, lang: string): string {
   const es = lang === "es";
-
-  if (currency === "USD") {
-    return `
-      <p style="margin:0 0 10px;font-weight:bold;color:#15803d">${es ? "Instrucciones de Pago" : "Payment Instructions"}</p>
-      <p style="margin:0 0 8px;font-size:14px;color:#374151">
-        ${es
-          ? "Transferencia bancaria internacional / Wire transfer:"
-          : "International wire transfer:"}
-      </p>
-      <table style="font-size:13px;color:#374151;border-collapse:collapse;width:100%">
-        <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">${es ? "Banco" : "Bank"}</td><td style="font-weight:600">BAC San José</td></tr>
-        <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">${es ? "Beneficiario" : "Beneficiary"}</td><td style="font-weight:600">Pura Vida Growth Innovation Sociedad Anónima</td></tr>
-        <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">IBAN / Account</td><td style="font-weight:600;font-family:monospace">CR92 0102 0000 9548 7763 51</td></tr>
-        <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">SWIFT / BIC</td><td style="font-weight:600;font-family:monospace">BACCCRSX</td></tr>
-      </table>
-      <div style="margin-top:12px;padding:10px 12px;background:#fef9c3;border-radius:6px;border-left:3px solid #ca8a04">
-        <p style="margin:0;font-size:13px;color:#854d0e">
-          <strong>⚠️ ${es ? "Importante:" : "Important:"}</strong>
-          ${es
-            ? `En el campo <em>concepto / descripción</em> del pago, incluya: <strong style="font-family:monospace">${invoiceRef}</strong> o el nombre de su empresa. Esto nos permite identificar su pago de inmediato.`
-            : `In the transfer <em>reference / description</em> field, please include: <strong style="font-family:monospace">${invoiceRef}</strong> or your company name. This allows us to identify your payment immediately.`
-          }
-        </p>
-      </div>`;
-  }
-
-  // CRC — SINPE
   return `
     <p style="margin:0 0 10px;font-weight:bold;color:#15803d">${es ? "Instrucciones de Pago" : "Payment Instructions"}</p>
+    <p style="margin:0 0 8px;font-size:14px;color:#374151">
+      ${es ? "Transferencia bancaria internacional / Wire transfer:" : "International wire transfer:"}
+    </p>
     <table style="font-size:13px;color:#374151;border-collapse:collapse;width:100%">
-      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">SINPE Móvil</td><td style="font-weight:700;font-family:monospace;font-size:16px">${sinpe || SINPE_DEFAULT}</td></tr>
-      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">${es ? "Nombre" : "Name"}</td><td style="font-weight:600">Federico Rojas / Pura Vida Growth</td></tr>
+      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">${es ? "Banco" : "Bank"}</td><td style="font-weight:600">BAC San José</td></tr>
+      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">${es ? "Beneficiario" : "Beneficiary"}</td><td style="font-weight:600">Pura Vida Growth Innovation Sociedad Anónima</td></tr>
+      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">IBAN / Account</td><td style="font-weight:600;font-family:monospace">CR92 0102 0000 9548 7763 51</td></tr>
+      <tr><td style="padding:2px 12px 2px 0;color:#6b7280;white-space:nowrap">SWIFT / BIC</td><td style="font-weight:600;font-family:monospace">BACCCRSX</td></tr>
     </table>
     <div style="margin-top:12px;padding:10px 12px;background:#fef9c3;border-radius:6px;border-left:3px solid #ca8a04">
       <p style="margin:0;font-size:13px;color:#854d0e">
         <strong>⚠️ ${es ? "Importante:" : "Important:"}</strong>
         ${es
-          ? `En el campo <em>descripción / concepto</em> del SINPE, escriba: <strong style="font-family:monospace">${invoiceRef}</strong> o su nombre de empresa. Esto nos ayuda a registrar su pago correctamente.`
-          : `In the SINPE <em>description / concept</em> field, please write: <strong style="font-family:monospace">${invoiceRef}</strong> or your company name. This helps us record your payment correctly.`
+          ? `En el campo <em>concepto / descripción</em> del pago, incluya: <strong style="font-family:monospace">${invoiceRef}</strong> o el nombre de su empresa. Esto nos permite identificar su pago de inmediato.`
+          : `In the transfer <em>reference / description</em> field, please include: <strong style="font-family:monospace">${invoiceRef}</strong> or your company name. This allows us to identify your payment immediately.`
         }
       </p>
     </div>`;
@@ -72,7 +47,7 @@ function paymentInstructionsHtml(currency: string, sinpe: string | null | undefi
 export async function sendInvoiceEmail(data: InvoiceEmailData) {
   const es = data.lang === "es";
   const lang = data.lang ?? "en";
-  const paymentBlock = paymentInstructionsHtml(data.currency, data.sinpeNumber, data.invoiceRef, lang);
+  const paymentBlock = paymentInstructionsHtml(data.invoiceRef, lang);
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
@@ -121,7 +96,7 @@ export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: 
   const isUrgent = data.daysOverdue >= 14;
   const es = data.lang === "es";
   const lang = data.lang ?? "en";
-  const paymentBlock = paymentInstructionsHtml(data.currency, data.sinpeNumber, data.invoiceRef, lang);
+  const paymentBlock = paymentInstructionsHtml(data.invoiceRef, lang);
 
   const subject = es
     ? (isUrgent ? `[URGENTE] Factura ${data.invoiceRef} — ${data.daysOverdue} días de atraso` : `Recordatorio: Factura ${data.invoiceRef}`)

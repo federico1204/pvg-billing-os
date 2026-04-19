@@ -127,11 +127,6 @@ export default function SettingsPage() {
               <Input type="number" min="1" value={settings.default_payment_terms_days ?? "30"} onChange={(e) => set("default_payment_terms_days", e.target.value)} />
               <p className="text-xs text-zinc-500 mt-1">Number of days after invoice date the payment is due</p>
             </div>
-            <div>
-              <Label>SINPE Móvil Number</Label>
-              <Input placeholder="8888-8888" value={settings.sinpe_number ?? ""} onChange={(e) => set("sinpe_number", e.target.value)} />
-              <p className="text-xs text-zinc-500 mt-1">Default SINPE number added to CRC invoices</p>
-            </div>
           </div>
         </Card>
 

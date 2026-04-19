@@ -171,7 +171,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
             <div className="flex justify-between"><span className="text-zinc-400">Currency</span><span className="text-zinc-300">{inv.currency}</span></div>
             <div className="flex justify-between"><span className="text-zinc-400">Sent At</span><span className="text-zinc-300">{inv.sentAt ? new Date(inv.sentAt).toLocaleDateString() : "Not sent"}</span></div>
             <div className="flex justify-between"><span className="text-zinc-400">Follow-ups</span><span className="text-zinc-300">{inv.followUpCount}</span></div>
-            {inv.sinpeNumber && <div className="flex justify-between"><span className="text-zinc-400">SINPE</span><span className="text-zinc-300">{inv.sinpeNumber}</span></div>}
             {inv.notes && <div className="pt-2 border-t border-zinc-800"><p className="text-zinc-400 text-xs mb-1">Notes</p><p className="text-zinc-300 text-xs">{inv.notes}</p></div>}
           </div>
         </Card>
@@ -234,7 +233,6 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
                 <Label>Method</Label>
                 <select className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-green-500" value={payForm.method} onChange={(e) => setPayForm(f => ({ ...f, method: e.target.value }))}>
                   <option value="bank_transfer">Bank Transfer</option>
-                  <option value="sinpe">SINPE Móvil</option>
                   <option value="card">Card</option>
                   <option value="cash">Cash</option>
                 </select>

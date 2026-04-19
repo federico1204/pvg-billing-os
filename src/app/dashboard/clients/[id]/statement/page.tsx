@@ -210,23 +210,14 @@ export default function ClientStatementPage({ params }: { params: Promise<{ id: 
           {totalOutstanding > 0 && (
             <div className="border border-gray-200 rounded-xl p-5 mb-8 bg-gray-50">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Payment Instructions</p>
-              <div className="grid grid-cols-2 gap-6 text-sm">
-                <div>
-                  <p className="font-semibold text-gray-700 mb-1">USD — Wire Transfer</p>
-                  <p className="text-gray-600 text-xs leading-relaxed">
-                    Bank: BAC San José<br />
-                    Beneficiary: Pura Vida Growth Innovation S.A.<br />
-                    IBAN: CR92 0102 0000 9548 7763 51<br />
-                    SWIFT: BACCCRSX
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-700 mb-1">CRC — SINPE Móvil</p>
-                  <p className="text-gray-600 text-xs leading-relaxed">
-                    Number: {client.sinpeNumber || "8888-8888"}<br />
-                    Name: Federico Rojas / Pura Vida Growth
-                  </p>
-                </div>
+              <div className="text-sm">
+                <p className="font-semibold text-gray-700 mb-1">Wire Transfer</p>
+                <p className="text-gray-600 text-xs leading-relaxed">
+                  Bank: BAC San José<br />
+                  Beneficiary: Pura Vida Growth Innovation S.A.<br />
+                  IBAN: CR92 0102 0000 9548 7763 51<br />
+                  SWIFT: BACCCRSX
+                </p>
               </div>
               <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
                 <p className="text-xs text-amber-800">
