@@ -7,8 +7,11 @@ function getResend() {
 }
 
 // AXIS — AI Billing Assistant for Pura Vida Growth
-const FROM = "AXIS <billing@puravidagrowth.com>";
-const BCC = "billing@puravidagrowth.com";
+// Sends from verified Resend subdomain; clients reply to billing@puravidagrowth.com
+const FROM = "AXIS <billing@updates.puravidagrowth.com>";
+const REPLY_TO = "billing@puravidagrowth.com";
+const BCC = "billing@updates.puravidagrowth.com";
+const BILLING_EMAIL = "billing@puravidagrowth.com";
 const WEBSITE = "puravidagrowth.com";
 
 interface InvoiceEmailData {
@@ -43,7 +46,7 @@ function emailFooter(lang: string): string {
     <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:1px solid #e5e7eb">
       <p style="margin:0 0 4px;color:#6b7280;font-size:12px;font-weight:600">AXIS · AI Billing Assistant</p>
       <p style="margin:0;color:#9ca3af;font-size:11px">
-        <a href="mailto:billing@puravidagrowth.com" style="color:#9ca3af;text-decoration:none">billing@puravidagrowth.com</a>
+        <a href="mailto:${BILLING_EMAIL}" style="color:#9ca3af;text-decoration:none">${BILLING_EMAIL}</a>
         &nbsp;·&nbsp;
         <a href="https://${WEBSITE}" style="color:#9ca3af;text-decoration:none">${WEBSITE}</a>
       </p>
@@ -79,6 +82,17 @@ function paymentInstructionsHtml(invoiceRef: string, lang: string): string {
     </div>`;
 }
 
+async function send(to: string, subject: string, html: string) {
+  return getResend().emails.send({
+    from: FROM,
+    to: [to],
+    reply_to: REPLY_TO,
+    bcc: [BCC],
+    subject,
+    html,
+  });
+}
+
 export async function sendInvoiceEmail(data: InvoiceEmailData) {
   const es = data.lang === "es";
   const lang = data.lang ?? "en";
@@ -105,21 +119,19 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
         </div>
         ${data.notes ? `<p style="color:#374151"><strong>${es ? "Notas" : "Notes"}:</strong> ${data.notes}</p>` : ""}
         <p style="color:#374151">${es
-          ? `Si tiene alguna consulta, responda a este correo o escríbanos a <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
-          : `Questions? Reply to this email or reach us at <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
+          ? `Si tiene alguna consulta, responda a este correo o escríbanos a <a href="mailto:${BILLING_EMAIL}" style="color:#16a34a">${BILLING_EMAIL}</a>.`
+          : `Questions? Reply to this email or reach us at <a href="mailto:${BILLING_EMAIL}" style="color:#16a34a">${BILLING_EMAIL}</a>.`
         }</p>
         <p style="color:#374151">${es ? "¡Gracias por su preferencia!" : "Thank you for your business!"}</p>
       </div>
       ${emailFooter(lang)}
     </div>`;
 
-  return getResend().emails.send({
-    from: FROM,
-    to: [data.clientEmail],
-    bcc: [BCC],
-    subject: es ? `Factura ${data.invoiceRef} — ${data.totalAmount}` : `Invoice ${data.invoiceRef} — ${data.totalAmount}`,
+  return send(
+    data.clientEmail,
+    es ? `Factura ${data.invoiceRef} — ${data.totalAmount}` : `Invoice ${data.invoiceRef} — ${data.totalAmount}`,
     html,
-  });
+  );
 }
 
 export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: number; followUpCount: number }) {
@@ -159,14 +171,14 @@ export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: 
           ${paymentBlock}
         </div>
         <p style="color:#374151">${es
-          ? `Si ya realizó el pago, por favor ignore este mensaje o responda con su comprobante. Si tiene alguna consulta, contáctenos en <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
-          : `If you've already sent payment, please disregard this message or reply with your confirmation. Questions? Contact us at <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
+          ? `Si ya realizó el pago, por favor ignore este mensaje o responda con su comprobante. Si tiene alguna consulta, contáctenos en <a href="mailto:${BILLING_EMAIL}" style="color:#16a34a">${BILLING_EMAIL}</a>.`
+          : `If you've already sent payment, please disregard this message or reply with your confirmation. Questions? Contact us at <a href="mailto:${BILLING_EMAIL}" style="color:#16a34a">${BILLING_EMAIL}</a>.`
         }</p>
       </div>
       ${emailFooter(lang)}
     </div>`;
 
-  return getResend().emails.send({ from: FROM, to: [data.clientEmail], bcc: [BCC], subject, html });
+  return send(data.clientEmail, subject, html);
 }
 
 export async function sendPaymentConfirmedEmail(data: InvoiceEmailData & { isPartial?: boolean; balanceRemaining?: string }) {
@@ -200,13 +212,11 @@ export async function sendPaymentConfirmedEmail(data: InvoiceEmailData & { isPar
       ${emailFooter(lang)}
     </div>`;
 
-  return getResend().emails.send({
-    from: FROM,
-    to: [data.clientEmail],
-    bcc: [BCC],
-    subject: es
+  return send(
+    data.clientEmail,
+    es
       ? `Pago ${data.isPartial ? "recibido" : "confirmado"} — Factura ${data.invoiceRef}`
       : `Payment ${data.isPartial ? "received" : "confirmed"} — Invoice ${data.invoiceRef}`,
     html,
-  });
+  );
 }

@@ -9,21 +9,21 @@ function getResend() {
   return _resend;
 }
 
-const FROM = "AXIS <billing@puravidagrowth.com>";
-const BCC = "billing@puravidagrowth.com";
+const FROM = "AXIS <billing@updates.puravidagrowth.com>";
+const REPLY_TO = "billing@puravidagrowth.com";
+const BCC = "billing@updates.puravidagrowth.com";
+const BILLING_EMAIL = "billing@puravidagrowth.com";
 
 const SIGNATURE_EN = `AXIS · AI Billing Assistant<br>
-<a href="mailto:billing@puravidagrowth.com" style="color:#16a34a;text-decoration:none">billing@puravidagrowth.com</a>
+<a href="mailto:${BILLING_EMAIL}" style="color:#16a34a;text-decoration:none">${BILLING_EMAIL}</a>
  · <a href="https://puravidagrowth.com" style="color:#16a34a;text-decoration:none">puravidagrowth.com</a>`;
 
 const SIGNATURE_ES = `AXIS · Asistente de Facturación<br>
-<a href="mailto:billing@puravidagrowth.com" style="color:#16a34a;text-decoration:none">billing@puravidagrowth.com</a>
+<a href="mailto:${BILLING_EMAIL}" style="color:#16a34a;text-decoration:none">${BILLING_EMAIL}</a>
  · <a href="https://puravidagrowth.com" style="color:#16a34a;text-decoration:none">puravidagrowth.com</a>`;
 
 function buildHtml(body: string, lang: string): string {
   const sig = lang === "es" ? SIGNATURE_ES : SIGNATURE_EN;
-
-  // Replace [SIGNATURE] placeholder and convert plain newlines to <br>
   const htmlBody = body
     .replace(/\[SIGNATURE\]/g, sig)
     .replace(/\n/g, "<br>");
@@ -45,7 +45,7 @@ function buildHtml(body: string, lang: string): string {
       <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:1px solid #e5e7eb">
         <p style="margin:0 0 4px;color:#6b7280;font-size:12px;font-weight:600">AXIS · AI Billing Assistant</p>
         <p style="margin:0;color:#9ca3af;font-size:11px">
-          <a href="mailto:billing@puravidagrowth.com" style="color:#9ca3af;text-decoration:none">billing@puravidagrowth.com</a>
+          <a href="mailto:${BILLING_EMAIL}" style="color:#9ca3af;text-decoration:none">${BILLING_EMAIL}</a>
           &nbsp;·&nbsp;
           <a href="https://puravidagrowth.com" style="color:#9ca3af;text-decoration:none">puravidagrowth.com</a>
         </p>
@@ -70,7 +70,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "subject and emailBody are required" }, { status: 400 });
   }
 
-  // Resolve recipient email
   let recipient = toEmail;
   if (!recipient) {
     const { data: client } = await db.from("clients").select("email, billing_email").eq("id", id).maybeSingle();
@@ -87,11 +86,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await getResend().emails.send({
       from: FROM,
       to: [recipient],
+      reply_to: REPLY_TO,
       bcc: [BCC],
       subject,
       html,
     });
-
     return NextResponse.json({ ok: true, id: result.data?.id });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Send failed" }, { status: 500 });
