@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fmt } from "@/lib/utils";
-import { Plus, Play, Pause, Zap, Pencil, Trash2, RefreshCw, CalendarClock } from "lucide-react";
+import { Plus, Play, Pause, Zap, Pencil, Trash2, RefreshCw, CalendarClock, Sparkles, ChevronDown, ChevronUp, CheckCircle } from "lucide-react";
 
 interface Client {
   id: number;
@@ -177,6 +177,16 @@ export default function RecurringPage() {
     }
   }
 
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/recurring/suggestions")
+      .then(r => r.json())
+      .then(d => { setSuggestions(d); setLoadingSuggestions(false); });
+  }, []);
+
   const active = items.filter(i => i.is_active);
   const paused = items.filter(i => !i.is_active);
   const dueThisWeek = active.filter(i => daysUntil(i.next_run_date) <= 7);
@@ -224,6 +234,83 @@ export default function RecurringPage() {
           </p>
         </div>
       </div>
+
+      {/* AI Suggestions */}
+      {!loadingSuggestions && suggestions.filter(s => !s.hasTemplate).length > 0 && (
+        <div className="mb-6 bg-indigo-950/30 border border-indigo-800/50 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setShowSuggestions(v => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-indigo-950/40 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles size={15} className="text-indigo-400" />
+              <span className="text-sm font-semibold text-white">
+                {suggestions.filter(s => !s.hasTemplate).length} Clients Recommended for Recurring
+              </span>
+              <span className="text-xs bg-indigo-900/60 text-indigo-300 px-2 py-0.5 rounded-full">
+                Based on invoice history
+              </span>
+            </div>
+            {showSuggestions ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
+          </button>
+
+          {showSuggestions && (
+            <div className="border-t border-indigo-800/30 divide-y divide-indigo-800/20">
+              {suggestions.filter(s => !s.hasTemplate).map(s => {
+                const confColor = s.confidence === "high" ? "text-green-400 bg-green-900/30 border-green-800/50"
+                  : s.confidence === "medium" ? "text-yellow-400 bg-yellow-900/20 border-yellow-800/40"
+                  : "text-zinc-400 bg-zinc-800/30 border-zinc-700/40";
+                return (
+                  <div key={s.clientId} className="px-5 py-4 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <p className="text-sm font-medium text-white">{s.clientName}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${confColor} capitalize`}>
+                          {s.confidence} confidence
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500">{s.reason}</p>
+                      {s.lastProject && (
+                        <p className="text-xs text-zinc-600 mt-0.5">Last project: {s.lastProject}</p>
+                      )}
+                    </div>
+                    <div className="text-right min-w-[120px]">
+                      <p className="text-sm font-semibold text-white">{fmt(s.suggestedAmount, s.currency)}</p>
+                      <p className="text-xs text-zinc-500">suggested / mo</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditing(null);
+                        setForm({
+                          ...emptyForm,
+                          clientId: String(s.clientId),
+                          name: s.lastProject ?? "Monthly Retainer",
+                          amount: String(s.suggestedAmount),
+                          currency: s.currency,
+                        });
+                        setShowForm(true);
+                      }}
+                      className="text-xs shrink-0"
+                    >
+                      <Plus size={12} /> Add Template
+                    </Button>
+                  </div>
+                );
+              })}
+              {suggestions.filter(s => s.hasTemplate).length > 0 && (
+                <div className="px-5 py-3 bg-zinc-900/30">
+                  <p className="text-xs text-zinc-600 flex items-center gap-1.5">
+                    <CheckCircle size={11} className="text-green-700" />
+                    {suggestions.filter(s => s.hasTemplate).length} client{suggestions.filter(s => s.hasTemplate).length > 1 ? "s" : ""} already have active recurring templates
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-20 text-zinc-500">Loading...</div>
