@@ -39,7 +39,7 @@ interface Payment {
 }
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const METHOD_LABELS: Record<string, string> = { SINPE: "SINPE Móvil", TEF: "TEF", bank_transfer: "Bank Transfer", cash: "Cash", other: "Other" };
+const METHOD_LABELS: Record<string, string> = { bank_transfer: "Bank Transfer", TEF: "TEF", cash: "Cash", SINPE: "SINPE Móvil", other: "Other" };
 const TYPE_LABELS: Record<string, string> = { salary: "Salary", bonus: "Bonus", project_payment: "Project", expense_reimbursement: "Reimbursement", advance: "Advance" };
 
 const emptyPayForm = {
@@ -48,7 +48,7 @@ const emptyPayForm = {
   paymentDate: new Date().toISOString().split("T")[0],
   amount: "",
   currency: "USD",
-  paymentMethod: "SINPE",
+  paymentMethod: "bank_transfer",
   referenceNumber: "",
   periodMonth: new Date().getMonth() + 1,
   periodYear: new Date().getFullYear(),
@@ -80,15 +80,9 @@ export default function TeamPage() {
 
   useEffect(() => { load(); }, []);
 
-  // Summary stats
-  const currentMonth = new Date().getMonth() + 1;
-  const currentYear = new Date().getFullYear();
-  const totalPaidThisMonth = payments
-    .filter(p => p.period_month === currentMonth && p.period_year === currentYear && p.currency === "USD")
-    .reduce((s, p) => s + parseFloat(String(p.amount)), 0);
-  const totalPaidYTD = payments
-    .filter(p => p.period_year === currentYear && p.currency === "USD")
-    .reduce((s, p) => s + parseFloat(String(p.amount)), 0);
+  // Summary stats — derived from expense-backed member data
+  const totalPaidThisMonth = members.reduce((s, m) => s + (m.thisMonthPaid || 0), 0);
+  const totalPaidYTD = members.reduce((s, m) => s + (m.ytdPaid || 0), 0);
 
   async function saveMonthlyCost(id: number) {
     await fetch(`/api/team/${id}`, {
@@ -129,7 +123,7 @@ export default function TeamPage() {
       personName: member.person_name,
       amount: member.monthly_cost ? String(member.monthly_cost) : "",
       currency: member.currency,
-      paymentMethod: member.payment_method_preferred || "SINPE",
+      paymentMethod: member.payment_method_preferred || "bank_transfer",
     });
     setShowPayForm(true);
   }
@@ -230,12 +224,7 @@ export default function TeamPage() {
 
               <div className="flex items-center justify-between pt-2 border-t border-zinc-800">
                 <div className="flex items-center gap-2">
-                  {m.sinpe_number && (
-                    <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded">
-                      SINPE {m.sinpe_number}
-                    </span>
-                  )}
-                  {m.payment_method_preferred && !m.sinpe_number && (
+                  {m.payment_method_preferred && (
                     <span className="text-xs text-zinc-600">{METHOD_LABELS[m.payment_method_preferred] ?? m.payment_method_preferred}</span>
                   )}
                 </div>
@@ -426,7 +415,7 @@ export default function TeamPage() {
                 <div>
                   <Label>Reference / Confirmation #</Label>
                   <Input
-                    placeholder="SINPE conf. or TEF ref."
+                    placeholder="Transfer ref. or confirmation #"
                     value={payForm.referenceNumber}
                     onChange={e => setPayForm(f => ({ ...f, referenceNumber: e.target.value }))}
                   />

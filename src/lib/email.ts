@@ -6,9 +6,9 @@ function getResend() {
   return _resend;
 }
 
-// AXIS — AI Billing Assistant for Pura Vida Growth
+// PVG AXIS — AI Billing Assistant for Pura Vida Growth
 // Sends from verified Resend subdomain; clients reply to billing@puravidagrowth.com
-const FROM = "AXIS <billing@updates.puravidagrowth.com>";
+const FROM = "PVG AXIS <billing@updates.puravidagrowth.com>";
 const REPLY_TO = "billing@puravidagrowth.com";
 const BCC = "billing@updates.puravidagrowth.com";
 const BILLING_EMAIL = "billing@puravidagrowth.com";
@@ -26,27 +26,28 @@ interface InvoiceEmailData {
   lang?: string; // "en" | "es"
 }
 
+function emailLogo(): string {
+  return `
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+      <tr>
+        <td width="46" height="46" style="background:#262d05;border-radius:8px;text-align:center;vertical-align:middle;font-family:Arial,sans-serif">
+          <span style="color:#819800;font-size:26px;font-weight:900;line-height:46px;display:block">A</span>
+        </td>
+        <td style="padding-left:12px;vertical-align:middle">
+          <div style="color:#ffffff;font-size:21px;font-weight:800;letter-spacing:3px;font-family:Arial,sans-serif;line-height:1.1">PVG AXIS</div>
+          <div style="color:#819800;font-size:10px;font-weight:600;letter-spacing:1px;font-family:Arial,sans-serif;margin-top:2px">by Pura Vida Growth</div>
+        </td>
+      </tr>
+    </table>`;
+}
+
 function emailHeader(subtitle: string, urgent = false): string {
   const bg = urgent ? "#3b0a0a" : "#0f1202";
   const accentBar = urgent ? "#f94300" : "#819800";
   return `
     <div style="background:${bg};padding:28px 32px;text-align:center;border-bottom:3px solid ${accentBar}">
-      <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:6px">
-        <div style="width:40px;height:40px;background:#262d05;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="38" height="38" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <line x1="7" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
-            <line x1="33" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
-            <line x1="12.5" y1="25.5" x2="27.5" y2="25.5" stroke="#819800" stroke-width="3.5" stroke-linecap="round"/>
-            <line x1="21" y1="25.5" x2="27.5" y2="33" stroke="#fda22c" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
-            <circle cx="20" cy="9" r="2.8" fill="#fda22c"/>
-          </svg>
-        </div>
-        <div style="text-align:left">
-          <div style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:0.18em;font-family:Arial,sans-serif;line-height:1">AXIS</div>
-          <div style="color:#819800;font-size:11px;font-weight:500;letter-spacing:0.06em;font-family:Arial,sans-serif;line-height:1.4">by Pura Vida Growth</div>
-        </div>
-      </div>
-      <p style="color:#6b7280;margin:6px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">${subtitle}</p>
+      ${emailLogo()}
+      <p style="color:#6b7280;margin:10px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">${subtitle}</p>
     </div>`;
 }
 
@@ -54,14 +55,14 @@ function emailFooter(lang: string): string {
   const es = lang === "es";
   return `
     <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:3px solid #819800">
-      <p style="margin:0;color:#262d05;font-size:13px;font-weight:800;letter-spacing:0.15em;font-family:Arial,sans-serif">AXIS</p>
-      <p style="margin:2px 0 6px;color:#819800;font-size:10px;font-weight:500;letter-spacing:0.06em;font-family:Arial,sans-serif">by Pura Vida Growth</p>
-      <p style="margin:0;color:#9ca3af;font-size:11px">
+      <p style="margin:0;color:#262d05;font-size:13px;font-weight:800;letter-spacing:3px;font-family:Arial,sans-serif">PVG AXIS</p>
+      <p style="margin:2px 0 6px;color:#819800;font-size:10px;font-weight:600;font-family:Arial,sans-serif">by Pura Vida Growth</p>
+      <p style="margin:0;font-size:11px;font-family:Arial,sans-serif">
         <a href="mailto:${BILLING_EMAIL}" style="color:#819800;text-decoration:none">${BILLING_EMAIL}</a>
         &nbsp;·&nbsp;
         <a href="https://${WEBSITE}" style="color:#819800;text-decoration:none">${WEBSITE}</a>
       </p>
-      <p style="margin:6px 0 0;color:#d1d5db;font-size:10px">
+      <p style="margin:6px 0 0;color:#9ca3af;font-size:10px;font-family:Arial,sans-serif">
         ${es
           ? "Este mensaje fue generado automáticamente. No comparta esta información con terceros."
           : "This message was generated automatically. Please do not share this information with third parties."}

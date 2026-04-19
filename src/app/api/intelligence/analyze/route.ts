@@ -177,7 +177,7 @@ Analyze this data and provide your full financial intelligence report as CFO.`;
 
   const ai = getAI();
   const response = await ai.messages.create({
-    model: "claude-opus-4-5",
+    model: "claude-sonnet-4-5",
     max_tokens: 3000,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],

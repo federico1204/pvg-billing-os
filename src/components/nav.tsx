@@ -45,7 +45,7 @@ export function Nav() {
           <div className="flex items-center gap-2.5">
             <AxisIcon size={32} />
             <div>
-              <p className="text-sm font-bold text-white tracking-widest leading-tight">AXIS</p>
+              <p className="text-sm font-bold text-white tracking-widest leading-tight">PVG AXIS</p>
               <p className="text-[10px] text-[#819800] font-medium leading-tight">by Pura Vida Growth</p>
             </div>
           </div>

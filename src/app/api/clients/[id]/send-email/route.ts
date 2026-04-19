@@ -9,54 +9,44 @@ function getResend() {
   return _resend;
 }
 
-const FROM = "AXIS <billing@updates.puravidagrowth.com>";
+const FROM = "PVG AXIS <billing@updates.puravidagrowth.com>";
 const REPLY_TO = "billing@puravidagrowth.com";
 const BCC = "billing@updates.puravidagrowth.com";
 const BILLING_EMAIL = "billing@puravidagrowth.com";
 
-const SIGNATURE_EN = `AXIS · AI Billing Assistant<br>
-<a href="mailto:${BILLING_EMAIL}" style="color:#16a34a;text-decoration:none">${BILLING_EMAIL}</a>
- · <a href="https://puravidagrowth.com" style="color:#16a34a;text-decoration:none">puravidagrowth.com</a>`;
-
-const SIGNATURE_ES = `AXIS · Asistente de Facturación<br>
-<a href="mailto:${BILLING_EMAIL}" style="color:#16a34a;text-decoration:none">${BILLING_EMAIL}</a>
- · <a href="https://puravidagrowth.com" style="color:#16a34a;text-decoration:none">puravidagrowth.com</a>`;
+const SIGNATURE_EN = `PVG AXIS · AI Billing Assistant<br><a href="mailto:${BILLING_EMAIL}" style="color:#819800;text-decoration:none">${BILLING_EMAIL}</a> · <a href="https://puravidagrowth.com" style="color:#819800;text-decoration:none">puravidagrowth.com</a>`;
+const SIGNATURE_ES = `PVG AXIS · Asistente de Facturación<br><a href="mailto:${BILLING_EMAIL}" style="color:#819800;text-decoration:none">${BILLING_EMAIL}</a> · <a href="https://puravidagrowth.com" style="color:#819800;text-decoration:none">puravidagrowth.com</a>`;
 
 function buildHtml(body: string, lang: string): string {
   const sig = lang === "es" ? SIGNATURE_ES : SIGNATURE_EN;
-  const htmlBody = body
-    .replace(/\[SIGNATURE\]/g, sig)
-    .replace(/\n/g, "<br>");
+  const htmlBody = body.replace(/\[SIGNATURE\]/g, sig).replace(/\n/g, "<br>");
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
       <div style="background:#0f1202;padding:28px 32px;text-align:center;border-bottom:3px solid #819800">
-        <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:6px">
-          <div style="width:40px;height:40px;background:#262d05;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="38" height="38" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-              <line x1="7" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
-              <line x1="33" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
-              <line x1="12.5" y1="25.5" x2="27.5" y2="25.5" stroke="#819800" stroke-width="3.5" stroke-linecap="round"/>
-              <line x1="21" y1="25.5" x2="27.5" y2="33" stroke="#fda22c" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
-              <circle cx="20" cy="9" r="2.8" fill="#fda22c"/>
-            </svg>
-          </div>
-          <div style="text-align:left">
-            <div style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:0.18em;font-family:Arial,sans-serif;line-height:1">AXIS</div>
-            <div style="color:#819800;font-size:11px;font-weight:500;letter-spacing:0.06em;font-family:Arial,sans-serif;line-height:1.4">by Pura Vida Growth</div>
-          </div>
-        </div>
-        <p style="color:#6b7280;margin:6px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">AI Billing Assistant</p>
+        <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto">
+          <tr>
+            <td width="46" height="46" style="background:#262d05;border-radius:8px;text-align:center;vertical-align:middle">
+              <span style="color:#819800;font-size:26px;font-weight:900;line-height:46px;display:block;font-family:Arial,sans-serif">A</span>
+            </td>
+            <td style="padding-left:12px;vertical-align:middle">
+              <div style="color:#ffffff;font-size:21px;font-weight:800;letter-spacing:3px;font-family:Arial,sans-serif;line-height:1.1">PVG AXIS</div>
+              <div style="color:#819800;font-size:10px;font-weight:600;letter-spacing:1px;font-family:Arial,sans-serif;margin-top:2px">by Pura Vida Growth</div>
+            </td>
+          </tr>
+        </table>
+        <p style="color:#6b7280;margin:10px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">AI Billing Assistant</p>
       </div>
       <div style="padding:32px;background:#ffffff;line-height:1.7;font-size:14px">
         ${htmlBody}
       </div>
-      <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:1px solid #e5e7eb">
-        <p style="margin:0 0 4px;color:#6b7280;font-size:12px;font-weight:600">AXIS · AI Billing Assistant</p>
-        <p style="margin:0;color:#9ca3af;font-size:11px">
-          <a href="mailto:${BILLING_EMAIL}" style="color:#9ca3af;text-decoration:none">${BILLING_EMAIL}</a>
+      <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:3px solid #819800">
+        <p style="margin:0;color:#262d05;font-size:13px;font-weight:800;letter-spacing:3px;font-family:Arial,sans-serif">PVG AXIS</p>
+        <p style="margin:2px 0 6px;color:#819800;font-size:10px;font-weight:600;font-family:Arial,sans-serif">by Pura Vida Growth</p>
+        <p style="margin:0;font-size:11px;font-family:Arial,sans-serif">
+          <a href="mailto:${BILLING_EMAIL}" style="color:#819800;text-decoration:none">${BILLING_EMAIL}</a>
           &nbsp;·&nbsp;
-          <a href="https://puravidagrowth.com" style="color:#9ca3af;text-decoration:none">puravidagrowth.com</a>
+          <a href="https://puravidagrowth.com" style="color:#819800;text-decoration:none">puravidagrowth.com</a>
         </p>
       </div>
     </div>`;
