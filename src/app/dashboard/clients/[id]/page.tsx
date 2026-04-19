@@ -10,6 +10,7 @@ import { fmt, computeBillingStatus, daysOverdue } from "@/lib/utils";
 import {
   ArrowLeft, Edit2, Save, X, FileText, DollarSign, Plus, Trash2, Users,
   Bell, TrendingUp, Heart, AlertTriangle, Sparkles, Mail, Copy, Check, ClipboardList,
+  ChevronDown, ChevronRight, CreditCard, Send, ExternalLink, Receipt,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -95,6 +96,20 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [insights, setInsights] = useState<any>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+
+  // Invoice expansion + payment state
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<number | null>(null);
+  const [payModal, setPayModal] = useState<{ invoiceId: number; invoiceRef: string; balance: number; currency: string } | null>(null);
+  const [payForm, setPayForm] = useState({ amount: "", method: "bank_transfer", reference: "", notes: "", sendEmail: false });
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState<string | null>(null);
+  // New invoice modal state
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [newInvForm, setNewInvForm] = useState({ projectName: "", totalAmount: "", currency: "USD", invoiceType: "standard", dueDate: "", notes: "" });
+  const [newInvSaving, setNewInvSaving] = useState(false);
+  const [newInvError, setNewInvError] = useState<string | null>(null);
+  // Per-invoice email sending
+  const [sendingEmailFor, setSendingEmailFor] = useState<number | null>(null);
 
   // Email draft state
   const [showEmailModal, setShowEmailModal] = useState(false);
@@ -322,6 +337,75 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       emails.splice(index, 1);
       return { ...f, additionalEmails: emails };
     });
+  }
+
+  async function logPayment() {
+    if (!payModal) return;
+    setPaying(true);
+    setPayError(null);
+    const res = await fetch(`/api/invoices/${payModal.invoiceId}/pay`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: parseFloat(payForm.amount),
+        method: payForm.method,
+        reference: payForm.reference || undefined,
+        notes: payForm.notes || undefined,
+        sendEmail: payForm.sendEmail,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      setPayError(err.error || "Failed to log payment");
+    } else {
+      setPayModal(null);
+      setPayForm({ amount: "", method: "bank_transfer", reference: "", notes: "", sendEmail: false });
+      await load();
+    }
+    setPaying(false);
+  }
+
+  async function sendInvoiceEmail(invoiceId: number, type: "invoice" | "follow_up") {
+    setSendingEmailFor(invoiceId);
+    await fetch(`/api/invoices/${invoiceId}/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type }),
+    });
+    setSendingEmailFor(null);
+    await load();
+  }
+
+  async function createInvoice() {
+    setNewInvSaving(true);
+    setNewInvError(null);
+    const dueDate = newInvForm.dueDate || (() => {
+      const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().slice(0, 10);
+    })();
+    const res = await fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientName: client.commercial_name || client.name,
+        clientEmail: client.email,
+        clientCompany: client.llc_name || client.company,
+        projectName: newInvForm.projectName,
+        totalAmount: parseFloat(newInvForm.totalAmount),
+        currency: newInvForm.currency,
+        invoiceType: newInvForm.invoiceType,
+        dueDate,
+        notes: newInvForm.notes || undefined,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      setNewInvError(err.error || "Failed to create invoice");
+    } else {
+      setShowNewInvoice(false);
+      setNewInvForm({ projectName: "", totalAmount: "", currency: "USD", invoiceType: "standard", dueDate: "", notes: "" });
+      await load();
+    }
+    setNewInvSaving(false);
   }
 
   if (loading) return <div className="p-8 text-zinc-500">Loading...</div>;
@@ -552,42 +636,118 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
       {/* Invoice History */}
       <Card>
-        <div className="flex items-center gap-2 mb-4">
-          <FileText size={14} className="text-zinc-400" />
-          <h2 className="text-sm font-medium text-white">Invoice History</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileText size={14} className="text-zinc-400" />
+            <h2 className="text-sm font-medium text-white">Invoice History</h2>
+            <span className="text-xs text-zinc-600">({enrichedInvoices.length})</span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => { setShowNewInvoice(true); setNewInvError(null); }}>
+            <Plus size={13} />New Invoice
+          </Button>
         </div>
         {enrichedInvoices.length === 0 ? (
-          <p className="text-zinc-500 text-sm">No invoices yet</p>
+          <p className="text-zinc-500 text-sm">No invoices yet. Create the first one above.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800">
-                <th className="text-left pb-2 text-zinc-400 font-medium">Invoice</th>
-                <th className="text-left pb-2 text-zinc-400 font-medium">Project</th>
-                <th className="text-left pb-2 text-zinc-400 font-medium">Status</th>
-                <th className="text-right pb-2 text-zinc-400 font-medium">Amount</th>
-                <th className="text-right pb-2 text-zinc-400 font-medium">Balance</th>
-                <th className="text-right pb-2 text-zinc-400 font-medium">Due</th>
-              </tr>
-            </thead>
-            <tbody>
-              {enrichedInvoices.map((inv: any) => (
-                <tr key={inv.id} className="border-b border-zinc-800 hover:bg-zinc-900/50 cursor-pointer transition-colors" onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}>
-                  <td className="py-2">
-                    <span className="font-mono text-xs text-green-400 hover:text-green-300 transition-colors">{inv.invoice_ref || "—"}</span>
-                  </td>
-                  <td className="py-2 text-zinc-400 text-xs">{inv.project_name || "—"}</td>
-                  <td className="py-2"><StatusBadge status={inv.billing} /></td>
-                  <td className="py-2 text-right text-zinc-300">{fmt(inv.total, inv.currency)}</td>
-                  <td className="py-2 text-right"><span className={inv.balance > 0 ? "text-red-400" : "text-green-400"}>{fmt(inv.balance, inv.currency)}</span></td>
-                  <td className="py-2 text-right text-zinc-400 text-xs">
-                    {inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
-                    {inv.overdue > 0 && <div className="text-red-400">{inv.overdue}d late</div>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="space-y-0">
+            {/* Header row */}
+            <div className="grid grid-cols-[1fr_1.5fr_auto_auto_auto_auto] gap-2 pb-2 border-b border-zinc-800 text-xs text-zinc-500 font-medium px-2">
+              <span>Invoice</span>
+              <span>Project</span>
+              <span className="text-center w-24">Status</span>
+              <span className="text-right w-20">Amount</span>
+              <span className="text-right w-20">Balance</span>
+              <span className="text-right w-16">Due</span>
+            </div>
+            {enrichedInvoices.map((inv: any) => {
+              const isExpanded = expandedInvoiceId === inv.id;
+              return (
+                <div key={inv.id} className="border-b border-zinc-800/60 last:border-0">
+                  {/* Main row */}
+                  <div
+                    className="grid grid-cols-[1fr_1.5fr_auto_auto_auto_auto] gap-2 py-2.5 px-2 hover:bg-zinc-900/40 cursor-pointer transition-colors items-center group"
+                    onClick={() => setExpandedInvoiceId(isExpanded ? null : inv.id)}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {isExpanded ? <ChevronDown size={12} className="text-zinc-500 shrink-0" /> : <ChevronRight size={12} className="text-zinc-600 shrink-0" />}
+                      <span className="font-mono text-xs text-green-400">{inv.invoice_ref || "—"}</span>
+                    </div>
+                    <span className="text-xs text-zinc-400 truncate">{inv.project_name || "—"}</span>
+                    <div className="w-24 flex justify-center"><StatusBadge status={inv.billing} /></div>
+                    <span className="text-xs text-zinc-300 text-right w-20">{fmt(inv.total, inv.currency)}</span>
+                    <span className={`text-xs text-right w-20 font-medium ${inv.balance > 0 ? "text-red-400" : "text-green-400"}`}>{fmt(inv.balance, inv.currency)}</span>
+                    <div className="text-right w-16">
+                      <span className="text-xs text-zinc-400">
+                        {inv.due_date ? new Date(inv.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                      </span>
+                      {inv.overdue > 0 && <div className="text-xs text-red-400">{inv.overdue}d late</div>}
+                    </div>
+                  </div>
+
+                  {/* Expanded: payments + actions */}
+                  {isExpanded && (
+                    <div className="bg-zinc-900/60 border-t border-zinc-800/60 px-4 pb-4 pt-3">
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <button
+                          onClick={() => {
+                            setPayModal({ invoiceId: inv.id, invoiceRef: inv.invoice_ref, balance: inv.balance, currency: inv.currency });
+                            setPayForm({ amount: inv.balance > 0 ? String(inv.balance.toFixed(2)) : "", method: "bank_transfer", reference: "", notes: "", sendEmail: false });
+                            setPayError(null);
+                          }}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-green-900/30 text-green-400 border border-green-800 hover:bg-green-900/50 transition-colors"
+                        >
+                          <Receipt size={12} />Log Payment
+                        </button>
+                        <button
+                          onClick={() => sendInvoiceEmail(inv.id, inv.billing === "DRAFT" || inv.billing === "SENT" ? "invoice" : "follow_up")}
+                          disabled={sendingEmailFor === inv.id || !client.email}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-900/30 text-blue-400 border border-blue-800 hover:bg-blue-900/50 transition-colors disabled:opacity-40"
+                        >
+                          <Send size={12} />
+                          {sendingEmailFor === inv.id ? "Sending…" : inv.billing === "DRAFT" ? "Send Invoice" : "Send Follow-up"}
+                        </button>
+                        <Link href={`/dashboard/invoices/${inv.id}`} className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-400 border border-zinc-700 hover:text-white transition-colors">
+                          <ExternalLink size={12} />Full Detail
+                        </Link>
+                      </div>
+
+                      {/* Payments sub-table */}
+                      <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-2">
+                        Payments {inv.payments?.length > 0 ? `(${inv.payments.length})` : ""}
+                      </p>
+                      {!inv.payments || inv.payments.length === 0 ? (
+                        <p className="text-xs text-zinc-600 italic">No payments recorded yet.</p>
+                      ) : (
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-zinc-600">
+                              <th className="text-left pb-1 font-medium">Date</th>
+                              <th className="text-left pb-1 font-medium">Method</th>
+                              <th className="text-left pb-1 font-medium">Reference</th>
+                              <th className="text-right pb-1 font-medium">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inv.payments.map((p: any) => (
+                              <tr key={p.id} className="border-t border-zinc-800/40">
+                                <td className="py-1 text-zinc-400">
+                                  {p.paid_at ? new Date(p.paid_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                                </td>
+                                <td className="py-1 text-zinc-400 capitalize">{(p.method || "").replace(/_/g, " ")}</td>
+                                <td className="py-1 text-zinc-500 font-mono">{p.reference || "—"}</td>
+                                <td className="py-1 text-green-400 text-right font-medium">{fmt(parseFloat(p.amount), inv.currency)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         )}
       </Card>
 
@@ -810,6 +970,177 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           )}
         </Card>
       </div>
+
+      {/* Log Payment Modal */}
+      {payModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setPayModal(null)} />
+          <div className="relative bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <CreditCard size={15} className="text-green-400" />
+                <h2 className="text-sm font-semibold text-white">Log Payment</h2>
+                <span className="font-mono text-xs text-zinc-500">{payModal.invoiceRef}</span>
+              </div>
+              <button onClick={() => setPayModal(null)} className="text-zinc-400 hover:text-white"><X size={15} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="text-xs text-zinc-500 bg-zinc-800 rounded-lg px-3 py-2">
+                Balance remaining: <span className="text-red-400 font-semibold">{fmt(payModal.balance, payModal.currency)}</span>
+              </div>
+              <div>
+                <Label>Amount ({payModal.currency})</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={payForm.amount}
+                  onChange={(e) => setPayForm(f => ({ ...f, amount: e.target.value }))}
+                  placeholder={String(payModal.balance.toFixed(2))}
+                />
+              </div>
+              <div>
+                <Label>Payment Method</Label>
+                <select
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                  value={payForm.method}
+                  onChange={(e) => setPayForm(f => ({ ...f, method: e.target.value }))}
+                >
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="wire">Wire Transfer</option>
+                  <option value="ach">ACH</option>
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                  <option value="credit_card">Credit Card</option>
+                </select>
+              </div>
+              <div>
+                <Label>Reference / Confirmation #</Label>
+                <Input
+                  value={payForm.reference}
+                  onChange={(e) => setPayForm(f => ({ ...f, reference: e.target.value }))}
+                  placeholder="e.g. TRF-20240419-001"
+                />
+              </div>
+              <div>
+                <Label>Notes <span className="text-zinc-600 font-normal">(optional)</span></Label>
+                <Input
+                  value={payForm.notes}
+                  onChange={(e) => setPayForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Any additional notes..."
+                />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  className="accent-green-500"
+                  checked={payForm.sendEmail}
+                  onChange={(e) => setPayForm(f => ({ ...f, sendEmail: e.target.checked }))}
+                />
+                Send payment confirmation email to client
+              </label>
+              {payError && <p className="text-sm text-red-400">{payError}</p>}
+              <div className="flex gap-2 pt-1">
+                <Button onClick={logPayment} disabled={paying || !payForm.amount} className="flex-1">
+                  {paying ? "Saving…" : <><Check size={14} />Confirm Payment</>}
+                </Button>
+                <Button variant="ghost" onClick={() => setPayModal(null)}><X size={14} />Cancel</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Invoice Modal */}
+      {showNewInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setShowNewInvoice(false)} />
+          <div className="relative bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <FileText size={15} className="text-zinc-400" />
+                <h2 className="text-sm font-semibold text-white">New Invoice</h2>
+                <span className="text-xs text-zinc-500">for {client.commercial_name || client.name}</span>
+              </div>
+              <button onClick={() => setShowNewInvoice(false)} className="text-zinc-400 hover:text-white"><X size={15} /></button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <Label>Project / Service Name</Label>
+                <Input
+                  autoFocus
+                  value={newInvForm.projectName}
+                  onChange={(e) => setNewInvForm(f => ({ ...f, projectName: e.target.value }))}
+                  placeholder="e.g. Marketing Retainer – May 2026"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Amount</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newInvForm.totalAmount}
+                    onChange={(e) => setNewInvForm(f => ({ ...f, totalAmount: e.target.value }))}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label>Currency</Label>
+                  <select
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                    value={newInvForm.currency}
+                    onChange={(e) => setNewInvForm(f => ({ ...f, currency: e.target.value }))}
+                  >
+                    <option value="USD">USD</option>
+                    <option value="CRC">CRC (₡)</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Invoice Type</Label>
+                  <select
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                    value={newInvForm.invoiceType}
+                    onChange={(e) => setNewInvForm(f => ({ ...f, invoiceType: e.target.value }))}
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="retainer">Retainer</option>
+                    <option value="project">Project</option>
+                    <option value="milestone">Milestone</option>
+                  </select>
+                </div>
+                <div>
+                  <Label>Due Date</Label>
+                  <Input
+                    type="date"
+                    value={newInvForm.dueDate}
+                    onChange={(e) => setNewInvForm(f => ({ ...f, dueDate: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Notes <span className="text-zinc-600 font-normal">(optional)</span></Label>
+                <Input
+                  value={newInvForm.notes}
+                  onChange={(e) => setNewInvForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Any details for this invoice..."
+                />
+              </div>
+              {newInvError && <p className="text-sm text-red-400">{newInvError}</p>}
+              <div className="flex gap-2 pt-1">
+                <Button onClick={createInvoice} disabled={newInvSaving || !newInvForm.projectName || !newInvForm.totalAmount} className="flex-1">
+                  {newInvSaving ? "Creating…" : <><Plus size={14} />Create Invoice</>}
+                </Button>
+                <Button variant="ghost" onClick={() => setShowNewInvoice(false)}><X size={14} />Cancel</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Email Draft Modal */}
       {showEmailModal && (

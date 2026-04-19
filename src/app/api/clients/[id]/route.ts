@@ -36,12 +36,33 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { data: invoices } = await invoicesQuery;
   const clientInvoices = invoices ?? [];
+
+  // Fetch payments for all invoices so we can show them on the client page
+  const invoiceIds = clientInvoices.map((i: any) => i.id);
+  const paymentsByInvoice: Record<number, any[]> = {};
+  if (invoiceIds.length > 0) {
+    const { data: payments } = await db
+      .from("payments")
+      .select("*")
+      .in("invoice_id", invoiceIds)
+      .order("paid_at", { ascending: false });
+    for (const p of payments ?? []) {
+      if (!paymentsByInvoice[p.invoice_id]) paymentsByInvoice[p.invoice_id] = [];
+      paymentsByInvoice[p.invoice_id].push(p);
+    }
+  }
+
+  const invoicesWithPayments = clientInvoices.map((inv: any) => ({
+    ...inv,
+    payments: paymentsByInvoice[inv.id] ?? [],
+  }));
+
   const totalBilled = clientInvoices.reduce((s: number, i: any) => s + parseFloat(i.total_amount ?? 0), 0);
   const totalPaid = clientInvoices.reduce((s: number, i: any) => s + parseFloat(i.paid_amount ?? 0), 0);
 
   return NextResponse.json({
     ...client,
-    invoices: clientInvoices,
+    invoices: invoicesWithPayments,
     totalBilled,
     totalPaid,
     outstanding: totalBilled - totalPaid,

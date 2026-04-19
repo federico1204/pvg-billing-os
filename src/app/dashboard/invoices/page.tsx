@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fmt, BILLING_STATUSES, STATUS_LABELS, BillingStatus } from "@/lib/utils";
-import { Plus, Search, RefreshCw, SendHorizonal, Trash2 } from "lucide-react";
+import { Plus, Search, RefreshCw, SendHorizonal, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 
 // QuickBooks-style service categories for a marketing agency
 const SERVICE_CATEGORIES = [
@@ -51,7 +51,16 @@ interface Invoice {
   followUpCount: number;
 }
 
+type SortField = "invoiceRef" | "clientName" | "status" | "amount" | "balance" | "dueDate";
+
 const blankLine = (): LineItem => ({ description: "", category: "", quantity: 1, rate: 0, amount: 0 });
+
+function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: SortField; sortDir: "asc" | "desc" }) {
+  if (sortField !== field) return <ArrowUpDown size={12} className="text-zinc-600 ml-1 inline" />;
+  return sortDir === "asc"
+    ? <ArrowUp size={12} className="text-green-400 ml-1 inline" />
+    : <ArrowDown size={12} className="text-green-400 ml-1 inline" />;
+}
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -59,6 +68,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortField, setSortField] = useState<SortField>("dueDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showNew, setShowNew] = useState(false);
   const [newForm, setNewForm] = useState({
     clientName: "", clientEmail: "", clientCompany: "", projectName: "",
@@ -81,10 +92,37 @@ export default function InvoicesPage() {
 
   useEffect(() => { load(); }, []);
 
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  }
+
   const filtered = invoices.filter((inv) => {
     const matchSearch = search === "" || inv.invoiceRef.toLowerCase().includes(search.toLowerCase()) || inv.clientName.toLowerCase().includes(search.toLowerCase()) || (inv.projectName ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || inv.billingStatus === statusFilter;
     return matchSearch && matchStatus;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    let aVal: string | number = "", bVal: string | number = "";
+    switch (sortField) {
+      case "invoiceRef":  aVal = a.invoiceRef;        bVal = b.invoiceRef;        break;
+      case "clientName":  aVal = a.clientName;         bVal = b.clientName;        break;
+      case "status":      aVal = a.billingStatus;      bVal = b.billingStatus;     break;
+      case "amount":      aVal = a.totalAmount;        bVal = b.totalAmount;       break;
+      case "balance":     aVal = a.balanceRemaining;   bVal = b.balanceRemaining;  break;
+      case "dueDate":     aVal = a.dueDate || "";      bVal = b.dueDate || "";     break;
+    }
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+    }
+    return sortDir === "asc"
+      ? String(aVal).localeCompare(String(bVal))
+      : String(bVal).localeCompare(String(aVal));
   });
 
   function updateLine(i: number, field: keyof LineItem, value: string | number) {
@@ -136,6 +174,8 @@ export default function InvoicesPage() {
 
   const needsFollowUp = invoices.filter(i => ["SENT", "DUE_SOON", "DUE_TODAY", "OVERDUE"].includes(i.billingStatus) && i.billingStatus !== "PAID").length;
 
+  const thClass = "px-4 py-3 text-zinc-400 font-medium cursor-pointer hover:text-white transition-colors select-none";
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -183,19 +223,31 @@ export default function InvoicesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-zinc-800 bg-zinc-900/50">
-                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Invoice</th>
-                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Client</th>
+                <th className={`text-left ${thClass}`} onClick={() => toggleSort("invoiceRef")}>
+                  Invoice<SortIcon field="invoiceRef" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className={`text-left ${thClass}`} onClick={() => toggleSort("clientName")}>
+                  Client<SortIcon field="clientName" sortField={sortField} sortDir={sortDir} />
+                </th>
                 <th className="text-left px-4 py-3 text-zinc-400 font-medium">Project</th>
-                <th className="text-left px-4 py-3 text-zinc-400 font-medium">Status</th>
-                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Amount</th>
-                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Balance</th>
-                <th className="text-right px-4 py-3 text-zinc-400 font-medium">Due</th>
+                <th className={`text-left ${thClass}`} onClick={() => toggleSort("status")}>
+                  Status<SortIcon field="status" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className={`text-right ${thClass}`} onClick={() => toggleSort("amount")}>
+                  Amount<SortIcon field="amount" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className={`text-right ${thClass}`} onClick={() => toggleSort("balance")}>
+                  Balance<SortIcon field="balance" sortField={sortField} sortDir={sortDir} />
+                </th>
+                <th className={`text-right ${thClass}`} onClick={() => toggleSort("dueDate")}>
+                  Due<SortIcon field="dueDate" sortField={sortField} sortDir={sortDir} />
+                </th>
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {sorted.length === 0 ? (
                 <tr><td colSpan={7} className="text-center py-12 text-zinc-500">No invoices found</td></tr>
-              ) : filtered.map((inv) => (
+              ) : sorted.map((inv) => (
                 <tr
                   key={inv.id}
                   onClick={() => router.push(`/dashboard/invoices/${inv.id}`)}

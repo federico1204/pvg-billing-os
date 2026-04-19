@@ -180,12 +180,52 @@ export default function RecurringPage() {
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+  const [bulkCreating, setBulkCreating] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/recurring/suggestions")
       .then(r => r.json())
       .then(d => { setSuggestions(d); setLoadingSuggestions(false); });
   }, []);
+
+  // Next month day 1 as default next run date
+  function nextMonthFirst() {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1, 1);
+    return d.toISOString().split("T")[0];
+  }
+
+  async function createTemplateFromSuggestion(s: any) {
+    await fetch("/api/recurring", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        clientId: s.clientId,
+        name: s.lastProject || "Monthly Retainer",
+        amount: s.suggestedAmount,
+        currency: s.currency,
+        frequency: "monthly",
+        dayOfMonth: 1,
+        nextRunDate: nextMonthFirst(),
+        autoSend: false,
+      }),
+    });
+  }
+
+  async function bulkCreateAll() {
+    const pending = suggestions.filter(s => !s.hasTemplate && s.confidence !== "low");
+    if (!pending.length) return;
+    if (!confirm(`Create recurring templates for ${pending.length} client${pending.length > 1 ? "s" : ""}? You can edit details after.`)) return;
+    setBulkCreating(true);
+    setBulkResult(null);
+    await Promise.all(pending.map(createTemplateFromSuggestion));
+    setBulkResult(`Created ${pending.length} recurring template${pending.length > 1 ? "s" : ""}.`);
+    setBulkCreating(false);
+    await load();
+    // Refresh suggestions
+    fetch("/api/recurring/suggestions").then(r => r.json()).then(d => setSuggestions(d));
+  }
 
   const active = items.filter(i => i.is_active);
   const paused = items.filter(i => !i.is_active);
@@ -238,11 +278,11 @@ export default function RecurringPage() {
       {/* AI Suggestions */}
       {!loadingSuggestions && suggestions.filter(s => !s.hasTemplate).length > 0 && (
         <div className="mb-6 bg-indigo-950/30 border border-indigo-800/50 rounded-xl overflow-hidden">
-          <button
-            onClick={() => setShowSuggestions(v => !v)}
-            className="w-full flex items-center justify-between px-5 py-4 hover:bg-indigo-950/40 transition-colors"
-          >
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between px-5 py-4">
+            <button
+              onClick={() => setShowSuggestions(v => !v)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
               <Sparkles size={15} className="text-indigo-400" />
               <span className="text-sm font-semibold text-white">
                 {suggestions.filter(s => !s.hasTemplate).length} Clients Recommended for Recurring
@@ -250,9 +290,25 @@ export default function RecurringPage() {
               <span className="text-xs bg-indigo-900/60 text-indigo-300 px-2 py-0.5 rounded-full">
                 Based on invoice history
               </span>
+              {showSuggestions ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
+            </button>
+            {suggestions.filter(s => !s.hasTemplate && s.confidence !== "low").length > 1 && (
+              <Button
+                size="sm"
+                onClick={bulkCreateAll}
+                disabled={bulkCreating}
+                className="text-xs bg-indigo-600 hover:bg-indigo-500 border-0 shrink-0"
+              >
+                {bulkCreating ? <><RefreshCw size={12} className="animate-spin" />Creating…</> : <><Zap size={12} />Set Up All ({suggestions.filter(s => !s.hasTemplate && s.confidence !== "low").length})</>}
+              </Button>
+            )}
+          </div>
+
+          {bulkResult && (
+            <div className="mx-5 mb-3 px-3 py-2 bg-green-900/30 border border-green-800 rounded-lg text-xs text-green-300 flex items-center gap-1.5">
+              <CheckCircle size={12} />{bulkResult}
             </div>
-            {showSuggestions ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
-          </button>
+          )}
 
           {showSuggestions && (
             <div className="border-t border-indigo-800/30 divide-y divide-indigo-800/20">
@@ -278,24 +334,38 @@ export default function RecurringPage() {
                       <p className="text-sm font-semibold text-white">{fmt(s.suggestedAmount, s.currency)}</p>
                       <p className="text-xs text-zinc-500">suggested / mo</p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setEditing(null);
-                        setForm({
-                          ...emptyForm,
-                          clientId: String(s.clientId),
-                          name: s.lastProject ?? "Monthly Retainer",
-                          amount: String(s.suggestedAmount),
-                          currency: s.currency,
-                        });
-                        setShowForm(true);
-                      }}
-                      className="text-xs shrink-0"
-                    >
-                      <Plus size={12} /> Add Template
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          await createTemplateFromSuggestion(s);
+                          await load();
+                          fetch("/api/recurring/suggestions").then(r => r.json()).then(d => setSuggestions(d));
+                        }}
+                        className="text-xs"
+                      >
+                        <Plus size={12} /> Quick Add
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setEditing(null);
+                          setForm({
+                            ...emptyForm,
+                            clientId: String(s.clientId),
+                            name: s.lastProject ?? "Monthly Retainer",
+                            amount: String(s.suggestedAmount),
+                            currency: s.currency,
+                          });
+                          setShowForm(true);
+                        }}
+                        className="text-xs text-zinc-400"
+                      >
+                        Edit & Add
+                      </Button>
+                    </div>
                   </div>
                 );
               })}
