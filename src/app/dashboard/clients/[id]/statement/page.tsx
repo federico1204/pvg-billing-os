@@ -87,11 +87,19 @@ export default function ClientStatementPage({ params }: { params: Promise<{ id: 
           {/* Header */}
           <div className="flex items-start justify-between mb-8 print:mb-6">
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center text-white font-bold text-sm">A</div>
+              <div className="flex items-center gap-3 mb-3">
+                <div style={{ width: 38, height: 38, background: "#262d05", borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <svg width="38" height="38" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <line x1="7" y1="33" x2="20" y2="9" stroke="#819800" strokeWidth="4" strokeLinecap="round"/>
+                    <line x1="33" y1="33" x2="20" y2="9" stroke="#819800" strokeWidth="4" strokeLinecap="round"/>
+                    <line x1="12.5" y1="25.5" x2="27.5" y2="25.5" stroke="#819800" strokeWidth="3.5" strokeLinecap="round"/>
+                    <line x1="21" y1="25.5" x2="27.5" y2="33" stroke="#fda22c" strokeWidth="2.5" strokeLinecap="round" opacity={0.85}/>
+                    <circle cx="20" cy="9" r="2.8" fill="#fda22c"/>
+                  </svg>
+                </div>
                 <div>
                   <p className="font-bold text-gray-900 text-sm leading-tight tracking-widest">AXIS</p>
-                  <p className="text-gray-500 text-xs">AI Billing Assistant</p>
+                  <p style={{ color: "#819800" }} className="text-xs font-medium">by Pura Vida Growth</p>
                 </div>
               </div>
               <p className="text-gray-400 text-xs">billing@puravidagrowth.com · puravidagrowth.com</p>
@@ -231,7 +239,8 @@ export default function ClientStatementPage({ params }: { params: Promise<{ id: 
 
           {/* Footer */}
           <div className="border-t border-gray-200 pt-4 text-center">
-            <p className="text-xs font-semibold text-gray-500 tracking-widest mb-1">AXIS · AI Billing Assistant</p>
+            <p className="text-xs font-bold tracking-widest mb-0.5" style={{ color: "#262d05" }}>AXIS</p>
+            <p className="text-xs mb-1" style={{ color: "#819800" }}>by Pura Vida Growth</p>
             <p className="text-xs text-gray-400">
               billing@puravidagrowth.com · puravidagrowth.com<br />
               Questions about this statement? Reply to this email or contact us directly.

@@ -8,6 +8,7 @@ import {
   UserCheck, Eye, EyeOff, BookOpen,
 } from "lucide-react";
 import { usePrivacy } from "@/contexts/privacy";
+import { AxisIcon } from "@/components/axis-logo";
 
 const links = [
   { href: "/dashboard",            label: "Overview",       icon: LayoutDashboard, exact: true },
@@ -41,11 +42,11 @@ export function Nav() {
     <nav className="w-56 min-h-screen bg-zinc-950 border-r border-zinc-800 flex flex-col">
       <div className="p-4 border-b border-zinc-800">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center text-white font-bold text-xs">P</div>
+          <div className="flex items-center gap-2.5">
+            <AxisIcon size={32} />
             <div>
-              <p className="text-sm font-semibold text-white">Billing OS</p>
-              <p className="text-xs text-zinc-500">Pura Vida Growth</p>
+              <p className="text-sm font-bold text-white tracking-widest leading-tight">AXIS</p>
+              <p className="text-[10px] text-[#819800] font-medium leading-tight">by Pura Vida Growth</p>
             </div>
           </div>
           {/* Privacy toggle */}

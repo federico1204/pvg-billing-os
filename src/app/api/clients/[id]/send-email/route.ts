@@ -30,14 +30,23 @@ function buildHtml(body: string, lang: string): string {
 
   return `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
-      <div style="background:#0d0d0d;padding:28px 32px;text-align:center">
-        <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div style="width:32px;height:32px;background:#22c55e;border-radius:8px;display:inline-flex;align-items:center;justify-content:center">
-            <span style="color:#fff;font-weight:900;font-size:15px;font-family:Arial,sans-serif">A</span>
+      <div style="background:#0f1202;padding:28px 32px;text-align:center;border-bottom:3px solid #819800">
+        <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:6px">
+          <div style="width:40px;height:40px;background:#262d05;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="38" height="38" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+              <line x1="7" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
+              <line x1="33" y1="33" x2="20" y2="9" stroke="#819800" stroke-width="4" stroke-linecap="round"/>
+              <line x1="12.5" y1="25.5" x2="27.5" y2="25.5" stroke="#819800" stroke-width="3.5" stroke-linecap="round"/>
+              <line x1="21" y1="25.5" x2="27.5" y2="33" stroke="#fda22c" stroke-width="2.5" stroke-linecap="round" opacity="0.85"/>
+              <circle cx="20" cy="9" r="2.8" fill="#fda22c"/>
+            </svg>
           </div>
-          <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:2px;font-family:Arial,sans-serif">AXIS</span>
+          <div style="text-align:left">
+            <div style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:0.18em;font-family:Arial,sans-serif;line-height:1">AXIS</div>
+            <div style="color:#819800;font-size:11px;font-weight:500;letter-spacing:0.06em;font-family:Arial,sans-serif;line-height:1.4">by Pura Vida Growth</div>
+          </div>
         </div>
-        <p style="color:#9ca3af;margin:0;font-size:12px;letter-spacing:1px;text-transform:uppercase">AI Billing Assistant</p>
+        <p style="color:#6b7280;margin:6px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,sans-serif">AI Billing Assistant</p>
       </div>
       <div style="padding:32px;background:#ffffff;line-height:1.7;font-size:14px">
         ${htmlBody}
