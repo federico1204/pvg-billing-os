@@ -5,8 +5,11 @@ function getResend() {
   if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
   return _resend;
 }
-const FROM = "Pura Vida Growth <billing@puravidagrowth.com>";
+
+// AXIS — AI Billing Assistant for Pura Vida Growth
+const FROM = "AXIS <billing@puravidagrowth.com>";
 const BCC = "billing@puravidagrowth.com";
+const WEBSITE = "puravidagrowth.com";
 
 interface InvoiceEmailData {
   clientName: string;
@@ -18,6 +21,38 @@ interface InvoiceEmailData {
   currency: string;
   notes?: string | null;
   lang?: string; // "en" | "es"
+}
+
+function emailHeader(subtitle: string, urgent = false): string {
+  const bg = urgent ? "#7f1d1d" : "#0d0d0d";
+  return `
+    <div style="background:${bg};padding:28px 32px;text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:32px;height:32px;background:#22c55e;border-radius:8px;display:inline-flex;align-items:center;justify-content:center">
+          <span style="color:#fff;font-weight:900;font-size:15px;font-family:Arial,sans-serif">A</span>
+        </div>
+        <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:2px;font-family:Arial,sans-serif">AXIS</span>
+      </div>
+      <p style="color:#9ca3af;margin:0;font-size:12px;letter-spacing:1px;text-transform:uppercase">${subtitle}</p>
+    </div>`;
+}
+
+function emailFooter(lang: string): string {
+  const es = lang === "es";
+  return `
+    <div style="background:#f9fafb;padding:20px 16px;text-align:center;border-top:1px solid #e5e7eb">
+      <p style="margin:0 0 4px;color:#6b7280;font-size:12px;font-weight:600">AXIS · AI Billing Assistant</p>
+      <p style="margin:0;color:#9ca3af;font-size:11px">
+        <a href="mailto:billing@puravidagrowth.com" style="color:#9ca3af;text-decoration:none">billing@puravidagrowth.com</a>
+        &nbsp;·&nbsp;
+        <a href="https://${WEBSITE}" style="color:#9ca3af;text-decoration:none">${WEBSITE}</a>
+      </p>
+      <p style="margin:6px 0 0;color:#d1d5db;font-size:10px">
+        ${es
+          ? "Este mensaje fue generado automáticamente. No comparta esta información con terceros."
+          : "This message was generated automatically. Please do not share this information with third parties."}
+      </p>
+    </div>`;
 }
 
 function paymentInstructionsHtml(invoiceRef: string, lang: string): string {
@@ -51,10 +86,7 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
 
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
-      <div style="background:#0d0d0d;padding:32px;text-align:center">
-        <h1 style="color:#22c55e;margin:0;font-size:24px">Pura Vida Growth</h1>
-        <p style="color:#6b7280;margin:8px 0 0">${es ? "Factura" : "Invoice"} ${data.invoiceRef}</p>
-      </div>
+      ${emailHeader(es ? `Factura ${data.invoiceRef}` : `Invoice ${data.invoiceRef}`)}
       <div style="padding:32px;background:#ffffff">
         <p>${es ? `Hola ${data.clientName},` : `Hi ${data.clientName},`}</p>
         <p>${es
@@ -76,11 +108,9 @@ export async function sendInvoiceEmail(data: InvoiceEmailData) {
           ? `Si tiene alguna consulta, responda a este correo o escríbanos a <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
           : `Questions? Reply to this email or reach us at <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
         }</p>
-        <p>${es ? "¡Gracias por su preferencia!" : "Thank you for your business!"}</p>
+        <p style="color:#374151">${es ? "¡Gracias por su preferencia!" : "Thank you for your business!"}</p>
       </div>
-      <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">
-        Pura Vida Growth · billing@puravidagrowth.com · Costa Rica
-      </div>
+      ${emailFooter(lang)}
     </div>`;
 
   return getResend().emails.send({
@@ -102,12 +132,13 @@ export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: 
     ? (isUrgent ? `[URGENTE] Factura ${data.invoiceRef} — ${data.daysOverdue} días de atraso` : `Recordatorio: Factura ${data.invoiceRef}`)
     : (isUrgent ? `[URGENT] Invoice ${data.invoiceRef} — ${data.daysOverdue} days overdue` : `Friendly reminder: Invoice ${data.invoiceRef} due`);
 
+  const subtitle = isUrgent
+    ? (es ? "Aviso de Pago Urgente" : "Urgent Payment Notice")
+    : (es ? "Recordatorio de Pago" : "Payment Reminder");
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
-      <div style="background:${isUrgent ? "#7f1d1d" : "#0d0d0d"};padding:32px;text-align:center">
-        <h1 style="color:#22c55e;margin:0;font-size:24px">Pura Vida Growth</h1>
-        <p style="color:#d1d5db;margin:8px 0 0">${isUrgent ? (es ? "Aviso de Pago Urgente" : "Urgent Payment Notice") : (es ? "Recordatorio de Pago" : "Payment Reminder")}</p>
-      </div>
+      ${emailHeader(subtitle, isUrgent)}
       <div style="padding:32px;background:#ffffff">
         <p>${es ? `Hola ${data.clientName},` : `Hi ${data.clientName},`}</p>
         <p>${es
@@ -128,47 +159,54 @@ export async function sendFollowUpEmail(data: InvoiceEmailData & { daysOverdue: 
           ${paymentBlock}
         </div>
         <p style="color:#374151">${es
-          ? `Si ya realizó el pago, por favor ignóre este mensaje o responda con su comprobante. Si tiene alguna consulta, contáctenos en <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
+          ? `Si ya realizó el pago, por favor ignore este mensaje o responda con su comprobante. Si tiene alguna consulta, contáctenos en <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
           : `If you've already sent payment, please disregard this message or reply with your confirmation. Questions? Contact us at <a href="mailto:billing@puravidagrowth.com" style="color:#16a34a">billing@puravidagrowth.com</a>.`
         }</p>
       </div>
-      <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">
-        Pura Vida Growth · billing@puravidagrowth.com · Costa Rica
-      </div>
+      ${emailFooter(lang)}
     </div>`;
 
   return getResend().emails.send({ from: FROM, to: [data.clientEmail], bcc: [BCC], subject, html });
 }
 
 export async function sendPaymentConfirmedEmail(data: InvoiceEmailData & { isPartial?: boolean; balanceRemaining?: string }) {
+  const lang = data.lang ?? "en";
+  const es = data.lang === "es";
+
   const html = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a">
-      <div style="background:#052e16;padding:32px;text-align:center">
-        <h1 style="color:#22c55e;margin:0;font-size:24px">Pura Vida Growth</h1>
-        <p style="color:#86efac;margin:8px 0 0">${data.isPartial ? "Partial Payment Received" : "Payment Confirmed"}</p>
-      </div>
+      ${emailHeader(data.isPartial
+        ? (es ? "Pago Parcial Recibido" : "Partial Payment Received")
+        : (es ? "Pago Confirmado" : "Payment Confirmed")
+      )}
       <div style="padding:32px;background:#ffffff">
-        <p>Hi ${data.clientName},</p>
+        <p>${es ? `Hola ${data.clientName},` : `Hi ${data.clientName},`}</p>
         <p>${data.isPartial
-          ? `We've received your partial payment for invoice <strong>${data.invoiceRef}</strong>. The remaining balance is <strong>${data.balanceRemaining}</strong>.`
-          : `We've received full payment for invoice <strong>${data.invoiceRef}</strong>. Thank you!`
+          ? (es
+            ? `Hemos recibido su pago parcial de la factura <strong>${data.invoiceRef}</strong>. El saldo pendiente es <strong>${data.balanceRemaining}</strong>.`
+            : `We've received your partial payment for invoice <strong>${data.invoiceRef}</strong>. The remaining balance is <strong>${data.balanceRemaining}</strong>.`)
+          : (es
+            ? `Hemos recibido el pago completo de la factura <strong>${data.invoiceRef}</strong>. ¡Muchas gracias!`
+            : `We've received full payment for invoice <strong>${data.invoiceRef}</strong>. Thank you!`)
         }</p>
         <div style="background:#f0fdf4;border-radius:8px;padding:24px;margin:24px 0;text-align:center">
-          <p style="margin:0;color:#15803d;font-size:18px;font-weight:bold">${data.isPartial ? "Partial payment recorded" : "✓ Invoice fully paid"}</p>
-          ${data.isPartial ? `<p style="margin:8px 0 0;color:#6b7280">Balance remaining: ${data.balanceRemaining}</p>` : ""}
+          <p style="margin:0;color:#15803d;font-size:18px;font-weight:bold">
+            ${data.isPartial ? (es ? "Pago parcial registrado" : "Partial payment recorded") : (es ? "✓ Factura pagada completamente" : "✓ Invoice fully paid")}
+          </p>
+          ${data.isPartial ? `<p style="margin:8px 0 0;color:#6b7280">${es ? "Saldo pendiente" : "Balance remaining"}: ${data.balanceRemaining}</p>` : ""}
         </div>
-        <p>Thanks for working with Pura Vida Growth!</p>
+        <p style="color:#374151">${es ? "¡Gracias por su preferencia!" : "Thank you for your business!"}</p>
       </div>
-      <div style="background:#f9fafb;padding:16px;text-align:center;color:#9ca3af;font-size:12px">
-        Pura Vida Growth · billing@puravidagrowth.com · Costa Rica
-      </div>
+      ${emailFooter(lang)}
     </div>`;
 
   return getResend().emails.send({
     from: FROM,
     to: [data.clientEmail],
     bcc: [BCC],
-    subject: `Payment ${data.isPartial ? "received" : "confirmed"} — Invoice ${data.invoiceRef}`,
+    subject: es
+      ? `Pago ${data.isPartial ? "recibido" : "confirmado"} — Factura ${data.invoiceRef}`
+      : `Payment ${data.isPartial ? "received" : "confirmed"} — Invoice ${data.invoiceRef}`,
     html,
   });
 }

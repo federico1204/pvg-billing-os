@@ -88,13 +88,13 @@ export default function ClientStatementPage({ params }: { params: Promise<{ id: 
           <div className="flex items-start justify-between mb-8 print:mb-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center text-white font-bold text-sm">P</div>
+                <div className="w-8 h-8 rounded-lg bg-green-600 flex items-center justify-center text-white font-bold text-sm">A</div>
                 <div>
-                  <p className="font-bold text-gray-900 text-sm leading-tight">Pura Vida Growth</p>
-                  <p className="text-gray-500 text-xs">billing@puravidagrowth.com</p>
+                  <p className="font-bold text-gray-900 text-sm leading-tight tracking-widest">AXIS</p>
+                  <p className="text-gray-500 text-xs">AI Billing Assistant</p>
                 </div>
               </div>
-              <p className="text-gray-400 text-xs">Costa Rica · +506 XXXX-XXXX</p>
+              <p className="text-gray-400 text-xs">billing@puravidagrowth.com · puravidagrowth.com</p>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-gray-900">Account Statement</p>
@@ -231,8 +231,9 @@ export default function ClientStatementPage({ params }: { params: Promise<{ id: 
 
           {/* Footer */}
           <div className="border-t border-gray-200 pt-4 text-center">
+            <p className="text-xs font-semibold text-gray-500 tracking-widest mb-1">AXIS · AI Billing Assistant</p>
             <p className="text-xs text-gray-400">
-              Pura Vida Growth Innovation S.A. · billing@puravidagrowth.com · Costa Rica<br />
+              billing@puravidagrowth.com · puravidagrowth.com<br />
               Questions about this statement? Reply to this email or contact us directly.
             </p>
           </div>
