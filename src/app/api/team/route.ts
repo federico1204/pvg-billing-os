@@ -2,46 +2,63 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+// All name variants to try matching (full name + first+last shorthand)
+function nameVariants(personName: string): string[] {
+  const lower = personName.toLowerCase();
+  const parts = lower.split(" ");
+  const variants = [lower];
+  // "David Porras" → also try "David Porras Castro" reverse (first + last word only)
+  if (parts.length >= 2) variants.push(`${parts[0]} ${parts[parts.length - 1]}`);
+  return variants;
+}
+
 // Match an expense row to a team member by vendor or notes
 function matchesMember(expense: any, personName: string): boolean {
-  const nameLower = personName.toLowerCase();
-  const parts = nameLower.split(" ");
+  const variants = nameVariants(personName);
 
   if (expense.vendor) {
     const v = expense.vendor.toLowerCase();
-    if (v.includes(nameLower) || nameLower.includes(v)) return true;
-    // First + last name partial match (handles DAVID PORRAS CASTRO → "David Porras Castro")
-    if (parts.length >= 2 && v.includes(parts[0]) && v.includes(parts[parts.length - 1])) return true;
+    if (variants.some(n => v.includes(n) || n.includes(v))) return true;
   }
 
   if (expense.notes) {
-    return expense.notes.toLowerCase().includes(nameLower);
+    const notesLower = expense.notes.toLowerCase();
+    if (variants.some(n => notesLower.includes(n))) return true;
   }
   return false;
 }
 
-// For bulk notes like "David Porras Castro (1,500 USD)", extract the individual amount
+// For bulk notes like "David Porras Castro (1,500 USD)" or "David Porras (1,500 USD)",
+// extract the individual USD amount; for individual entries return the full amount.
 function extractAmount(expense: any, personName: string): number {
+  const variants = nameVariants(personName);
+
   // Individual entry: vendor matches person → use expense.amount directly
   if (expense.vendor) {
     const v = expense.vendor.toLowerCase();
-    const n = personName.toLowerCase();
-    const parts = n.split(" ");
-    const isIndividual =
-      v.includes(n) || n.includes(v) ||
-      (parts.length >= 2 && v.includes(parts[0]) && v.includes(parts[parts.length - 1]));
+    const isIndividual = variants.some(n => v.includes(n) || n.includes(v));
     if (isIndividual) return parseFloat(expense.amount ?? 0);
   }
 
-  // Bulk entry: parse amount from notes field
+  // Bulk entry: parse amount from notes field — try each name variant
   if (expense.notes) {
-    const escaped = personName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const match = expense.notes.match(
-      new RegExp(escaped + "\\s*\\(([\\d,\\.]+)\\s*(USD|CRC)[^)]*\\)", "i")
-    );
-    if (match) {
-      const raw = parseFloat(match[1].replace(/,/g, ""));
-      return match[2].toUpperCase() === "USD" ? raw : 0; // skip CRC for USD totals
+    for (const variant of variants) {
+      const escaped = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const match = expense.notes.match(
+        new RegExp(escaped + "\\s*\\(([\\d,\\.]+)\\s*(USD|CRC)[^)]*\\)", "i")
+      );
+      if (match) {
+        const raw = parseFloat(match[1].replace(/,/g, ""));
+        // CRC amounts already converted to USD equivalent in notes (e.g. "400,000 CRC / 873.36 USD")
+        // We want the USD figure — look for the slash pattern
+        if (match[2].toUpperCase() === "CRC") {
+          const usdMatch = expense.notes.match(
+            new RegExp(escaped + "[^)]*\\/(\\s*[\\d,\\.]+)\\s*USD", "i")
+          );
+          return usdMatch ? parseFloat(usdMatch[1].replace(/,/g, "")) : 0;
+        }
+        return raw;
+      }
     }
   }
   return 0;
@@ -62,6 +79,9 @@ export async function GET(_req: NextRequest) {
       .select("amount, date, currency, vendor, notes, category")
       .eq("category", "Payroll & Salaries")
       .gte("date", yearStart)
+      // Exclude raw bank-statement TEF entries (duplicates) and CRC-denominated entries
+      .not("vendor", "like", "TEF A%")
+      .not("vendor", "like", "Payroll CRC%")
       .order("date", { ascending: false }),
   ]);
 
