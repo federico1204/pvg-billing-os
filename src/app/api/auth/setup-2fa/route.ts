@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { generateSecret, getTOTPUri, validateTOTP } from "@/lib/totp";
 import { db } from "@/lib/db";
 import QRCode from "qrcode";
+// Use SVG output — no canvas dependency, works in all serverless environments
 
 export async function GET() {
   if (!await getSession()) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -23,11 +24,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   if (body.action === "generate") {
-    // Generate a new secret and return QR code (not yet saved)
+    // Generate a new secret and return QR code as SVG (no canvas needed)
     const secret = generateSecret();
     const uri = getTOTPUri(secret);
-    const qrDataUrl = await QRCode.toDataURL(uri, { width: 240, margin: 2 });
-    return NextResponse.json({ secret, qrDataUrl });
+    const qrSvg = await QRCode.toString(uri, { type: "svg", margin: 2, width: 240 });
+    return NextResponse.json({ secret, qrSvg });
   }
 
   if (body.action === "confirm") {

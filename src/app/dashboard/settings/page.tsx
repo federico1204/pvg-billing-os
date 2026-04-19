@@ -234,7 +234,7 @@ export default function SettingsPage() {
 function TwoFASection() {
   const [status, setStatus] = useState<"loading" | "enabled" | "disabled">("loading");
   const [phase, setPhase] = useState<"idle" | "setup" | "confirm">("idle");
-  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [qrSvg, setQrSvg] = useState("");
   const [secret, setSecret] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -258,7 +258,7 @@ function TwoFASection() {
       body: JSON.stringify({ action: "generate" }),
     });
     const data = await res.json();
-    setQrDataUrl(data.qrDataUrl);
+    setQrSvg(data.qrSvg);
     setSecret(data.secret);
     setPhase("setup");
     setWorking(false);
@@ -345,11 +345,12 @@ function TwoFASection() {
           <p className="text-xs text-zinc-400 mb-4">
             Open the Google Authenticator app, tap <strong className="text-zinc-300">+</strong> → <strong className="text-zinc-300">Scan a QR code</strong>, then point your camera at this code.
           </p>
-          {qrDataUrl && (
-            <div className="bg-white rounded-lg p-3 inline-block mb-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} alt="2FA QR Code" width={200} height={200} />
-            </div>
+          {qrSvg && (
+            <div
+              className="bg-white rounded-lg p-3 inline-block mb-4"
+              dangerouslySetInnerHTML={{ __html: qrSvg }}
+              style={{ lineHeight: 0 }}
+            />
           )}
           <p className="text-xs text-zinc-500 mb-1">Manual entry key (if camera doesn&apos;t work):</p>
           <p className="font-mono text-xs text-zinc-300 bg-zinc-900 rounded-lg px-3 py-2 mb-4 break-all select-all">{secret}</p>
